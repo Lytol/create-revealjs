@@ -1,0 +1,22 @@
+{
+  "name": "create-revealjs",
+  "version": "0.1.0",
+  "main": "index.js",
+  "bin": {
+    "create-revealjs": "index.js"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": {
+    "name": "Brian Smith",
+    "email": "brian.e.smith@gmail.com",
+    "url": "https://lytol.com"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "kolorist": "^1.5.1",
+    "minimist": "^1.2.6",
+    "prompts": "^2.4.2"
+  }
+}

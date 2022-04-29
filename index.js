@@ -6,13 +6,14 @@ const path = require('path')
 const prompts = require('prompts')
 const { red, reset } = require('kolorist')
 const argv = require('minimist')(process.argv.slice(2), { string: ['_'] })
+const cwd = process.cwd()
 
 async function init() {
   let targetDir = argv._[0]
+  let result = {}
 
   const defaultProjectName = targetDir || 'revealjs-project'
-
-  let result = {}
+  const template = 'vite'
 
   try {
     result = await prompts([
@@ -55,13 +56,46 @@ async function init() {
   }
 
   const { overwrite } = result
+  const root = path.join(cwd, targetDir)
 
-  console.log(`Target dir: ${targetDir} / Overwrite: ${overwrite}`)
+  const operations = [
+    {
+      title: "Removing existing directory",
+      run: () => {
+        fs.rmSync(root, { recursive: true, force: true })
+      },
+      when: () => overwrite
+    },
+    {
+      title: `Creating directory ${root}`,
+      run: () => {
+        fs.mkdirSync(root)
+      },
+      when: () => !isExisting(root)
+    },
+    {
+      title: `Copying template "${template}" to ${root}`,
+      run: () => {
+        const templateDir = path.join(__dirname, 'templates', template)
+        const files = fs.readdirSync(templateDir)
+
+        for (const file of files) {
+          copy(path.join(templateDir, file), path.join(root, file))
+        }
+      }
+    }
+  ]
+
+  for (const op of operations) {
+    if (op.when && !op.when()) {
+      continue
+    }
+
+    console.log(op.title)
+
+    op.run()
+  }
 }
-
-init().catch((e) => {
-  console.error(e)
-})
 
 function isEmpty(path) {
   return fs.readdirSync(path).length === 0
@@ -70,3 +104,25 @@ function isEmpty(path) {
 function isExisting(path) {
   return fs.existsSync(path)
 }
+
+function copy(src, dest) {
+  const stat = fs.statSync(src)
+  if (stat.isDirectory()) {
+    copyDir(src, dest)
+  } else {
+    fs.copyFileSync(src, dest)
+  }
+}
+
+function copyDir(srcDir, destDir) {
+  fs.mkdirSync(destDir, { recursive: true })
+  for (const file of fs.readdirSync(srcDir)) {
+    const srcFile = path.resolve(srcDir, file)
+    const destFile = path.resolve(destDir, file)
+    copy(srcFile, destFile)
+  }
+}
+
+init().catch((e) => {
+  console.error(e)
+})
